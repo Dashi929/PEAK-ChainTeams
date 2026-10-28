@@ -190,9 +190,7 @@ namespace ChainTeams
             var prevSkin = GUI.skin;
             if (PeakStyle.Skin != null) GUI.skin = PeakStyle.Skin;
 
-            var hotkeyName = Plugin.CfgUIHotkey.Value.ToString();
-            _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow,
-                $"组队锁链 v{Plugin.PluginVersion}   [{hotkeyName} 关闭]");
+            _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow, "");
 
             GUI.skin = prevSkin;
 
@@ -241,6 +239,7 @@ namespace ChainTeams
             DrawTabButton("分组管理", 0);
             DrawTabButton("设置", 1);
             GUILayout.FlexibleSpace();
+            GUILayout.Label($"组队锁链 v{Plugin.PluginVersion}   [{Plugin.CfgUIHotkey.Value} 关闭]", _idStyle);
             GUILayout.EndHorizontal();
             GUILayout.Space(W(4));
 

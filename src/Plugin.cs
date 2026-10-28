@@ -11,7 +11,7 @@ namespace ChainTeams
     {
         public const string PluginGuid = "com.peakmod.chainteams";
         public const string PluginName = "ChainTeams 组队锁链";
-        public const string PluginVersion = "1.4.0";
+        public const string PluginVersion = "1.4.1";
 
         // GUID of the old single-chain mod; both mods pulling players at once feels broken.
         public const string LegacyChainedGuid = "com.github.Quaree.Chained";
