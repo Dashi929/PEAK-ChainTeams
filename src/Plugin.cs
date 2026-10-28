@@ -11,7 +11,7 @@ namespace ChainTeams
     {
         public const string PluginGuid = "com.peakmod.chainteams";
         public const string PluginName = "ChainTeams 组队锁链";
-        public const string PluginVersion = "1.3.1";
+        public const string PluginVersion = "1.3.2";
 
         // GUID of the old single-chain mod; both mods pulling players at once feels broken.
         public const string LegacyChainedGuid = "com.github.Quaree.Chained";
@@ -19,7 +19,6 @@ namespace ChainTeams
         internal static ManualLogSource Log;
 
         internal static ConfigEntry<KeyCode> CfgUIHotkey;
-        internal static ConfigEntry<KeyCode> CfgMockHotkey;
         internal static ConfigEntry<int> CfgUISize;
         internal static ConfigEntry<int> CfgMaxPerTeam;
         internal static ConfigEntry<int> CfgMaxGroups;
@@ -43,9 +42,8 @@ namespace ChainTeams
             Log = Logger;
 
             CfgUIHotkey = Config.Bind("General", "UIHotkey", KeyCode.F9, "打开/关闭分组界面的按键");
-            CfgMockHotkey = Config.Bind("Debug", "MockHotkey", KeyCode.F7, "开关本地模拟组员测试模式的按键");
-            CfgUISize = Config.Bind("General", "UISize", 66,
-                new ConfigDescription("面板占屏幕的百分比（宽和高同比例）", new AcceptableValueRange<int>(40, 95)));
+            CfgUISize = Config.Bind("General", "PanelSize", 52,
+                new ConfigDescription("面板占屏幕的百分比（宽和高同比例）", new AcceptableValueRange<int>(30, 95)));
             CfgMaxPerTeam = Config.Bind("General", "MaxPerTeam", 6,
                 new ConfigDescription("每组最多人数（房主端生效，上限 6）", new AcceptableValueRange<int>(1, 6)));
             CfgMaxGroups = Config.Bind("General", "MaxGroups", 6,

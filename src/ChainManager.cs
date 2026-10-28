@@ -64,7 +64,6 @@ namespace ChainTeams
                 if (now - _lastKeyAction > 0.4f)
                 {
                     if (InputHelper.KeyDown(Plugin.CfgUIHotkey.Value)) { _lastKeyAction = now; UI.Toggle(); }
-                    else if (InputHelper.KeyDown(Plugin.CfgMockHotkey.Value)) { _lastKeyAction = now; MockPlayers.Toggle(); }
                 }
             }
             catch (System.Exception e)
@@ -123,12 +122,6 @@ namespace ChainTeams
                 {
                     _lastKeyAction = Time.realtimeSinceStartup;
                     UI.Toggle();
-                    e.Use();
-                }
-                else if (e.keyCode == Plugin.CfgMockHotkey.Value)
-                {
-                    _lastKeyAction = Time.realtimeSinceStartup;
-                    MockPlayers.Toggle();
                     e.Use();
                 }
             }

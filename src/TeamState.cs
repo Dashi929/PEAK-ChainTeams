@@ -88,6 +88,7 @@ namespace ChainTeams
             ResetLocal();
 
             if (!PhotonNetwork.InRoom) return;
+            // 注：模拟测试模式已在 1.3.2 移除
 
             var props = PhotonNetwork.CurrentRoom.CustomProperties;
             Enabled = props.TryGetValue(PropEnabled, out var e) && e is bool b && b;
@@ -177,12 +178,6 @@ namespace ChainTeams
             for (var i = 0; i <= MaxSlot; i++) cleaned[i] = new List<int>();
             for (var t = 1; t <= count; t++) cleaned[t].AddRange(teams[t]);
 
-            if (MockPlayers.Enabled)
-            {
-                ApplyLocal(enabled, count, cleaned, names);
-                return;
-            }
-
             if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient) return;
 
             var present = new HashSet<int>(
@@ -205,7 +200,6 @@ namespace ChainTeams
         /// <summary>房主专用：只发布锁链参数（滑条调节时高频调用，走小包）。</summary>
         public static void PublishParams()
         {
-            if (MockPlayers.Enabled) return;
             if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient) return;
             var ht = new Hashtable
             {

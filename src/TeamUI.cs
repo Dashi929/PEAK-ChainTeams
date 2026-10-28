@@ -50,17 +50,6 @@ namespace ChainTeams
         /// <summary>当前可用于分组的玩家列表（模拟模式下返回假组员）。</summary>
         private static List<PlayerInfo> GetRoomPlayers()
         {
-            if (MockPlayers.Enabled)
-            {
-                var mock = new List<PlayerInfo>();
-                for (var i = 0; i < MockPlayers.Fixed.Count; i++)
-                {
-                    var e = MockPlayers.Fixed[i];
-                    mock.Add(new PlayerInfo { Name = e.Name, Actor = e.Actor, IsLocal = false, IsHost = i == 0 });
-                }
-                return mock;
-            }
-
             return PhotonNetwork.PlayerList
                 .Where(p => !p.IsInactive)
                 .Select(p => new PlayerInfo
@@ -158,7 +147,7 @@ namespace ChainTeams
         public bool IsOpen => _open;
 
         /// <summary>面板只允许房主（或模拟测试模式）在联机房间内打开；主菜单、成员按热键均无反应。</summary>
-        private static bool CanOpen => (PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient) || MockPlayers.Enabled;
+        private static bool CanOpen => PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient;
 
         // 0 = 分组管理页，1 = 设置页
         private int _page;
@@ -206,6 +195,8 @@ namespace ChainTeams
                     Screen.width * ratio,
                     Screen.height * ratio);
                 _scale = _windowRect.width / DesignWidth;
+                // 硬上限：无论内容多高，窗口底部都不越过屏幕的 92%，彻底杜绝显示不全
+                _windowRect.height = Mathf.Min(_windowRect.height, Screen.height * 0.92f - _windowRect.y);
                 _positioned = true;
             }
 
@@ -215,11 +206,8 @@ namespace ChainTeams
             if (_scaledSkin != null) GUI.skin = _scaledSkin;
 
             var hotkeyName = Plugin.CfgUIHotkey.Value.ToString();
-            var mockName = Plugin.CfgMockHotkey.Value.ToString();
-            var title = MockPlayers.Enabled
-                ? $"组队锁链 v{Plugin.PluginVersion}【模拟测试·{mockName} 退出】 [{hotkeyName} 关闭]"
-                : $"组队锁链 v{Plugin.PluginVersion}   [{hotkeyName} 关闭]";
-            _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow, title);
+            _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow,
+                $"组队锁链 v{Plugin.PluginVersion}   [{hotkeyName} 关闭]");
 
             GUI.skin = prevSkin;
 
@@ -261,8 +249,6 @@ namespace ChainTeams
         private void DrawWindow(int id)
         {
             EnsureStyles();
-            var mock = MockPlayers.Enabled;
-
             GUILayout.BeginVertical();
 
             // 标签页：分组管理 / 设置
@@ -270,12 +256,11 @@ namespace ChainTeams
             DrawTabButton("分组管理", 0);
             DrawTabButton("设置", 1);
             GUILayout.FlexibleSpace();
-            GUILayout.Label(mock ? "身份：房主（模拟）" : "身份：房主", _idStyle);
             GUILayout.EndHorizontal();
             GUILayout.Space(W(4));
 
-            if (_page == 0) DrawGroupsPage(mock);
-            else DrawSettingsPage(mock);
+            if (_page == 0) DrawGroupsPage();
+            else DrawSettingsPage();
 
             GUILayout.EndVertical();
             GUI.DragWindow(new Rect(0, 0, 10000, W(26)));
@@ -303,9 +288,9 @@ namespace ChainTeams
 
         // ---------------- 分组管理页 ----------------
 
-        private void DrawGroupsPage(bool mock)
+        private void DrawGroupsPage()
         {
-            DrawStatusRow(mock);
+            DrawStatusRow();
             GUILayout.Space(W(4));
 
             DrawTeamSummary();
@@ -313,7 +298,7 @@ namespace ChainTeams
 
             // 滚动区撑满面板剩余高度，让面板稳定占满设定的屏幕比例
             _scroll = GUILayout.BeginScrollView(_scroll, false, true,
-                GUILayout.Height(Mathf.Max(W(180), _windowRect.height - W(215))));
+                GUILayout.Height(Mathf.Max(W(180), _windowRect.height - W(285))));
 
             for (var slot = 1; slot <= TeamState.GroupCount; slot++) DrawGroupSection(slot);
             DrawAddGroupRow();
@@ -333,7 +318,7 @@ namespace ChainTeams
 
         // ---------------- 设置页 ----------------
 
-        private void DrawSettingsPage(bool mock)
+        private void DrawSettingsPage()
         {
             _scroll = GUILayout.BeginScrollView(_scroll, false, true,
                 GUILayout.Height(Mathf.Max(W(220), _windowRect.height - W(120))));
@@ -369,7 +354,7 @@ namespace ChainTeams
             GUILayout.EndScrollView();
         }
 
-        private static void DrawStatusRow(bool mock)
+        private static void DrawStatusRow()
         {
             GUILayout.BeginHorizontal();
 
@@ -674,7 +659,7 @@ namespace ChainTeams
                 }
                 NameDraft[t] = null;
             }
-            if (dirty && (PhotonNetwork.IsMasterClient || MockPlayers.Enabled))
+            if (dirty && PhotonNetwork.IsMasterClient)
             {
                 PublishNow(TeamState.CopyTeams(), names);
             }
