@@ -35,7 +35,7 @@
 | 配置项 | 默认 | 说明 |
 | --- | --- | --- |
 | General.UIHotkey | F9 | 分组面板开关键 |
-| General.PanelSize | 52 | 面板占屏幕的百分比（宽高同比例，30–95，改后重开面板生效） |
+| General.PanelSize | 66 | 面板占屏幕的百分比（宽高同比例，30–95，改后重开面板生效） |
 | General.MaxPerTeam | 6 | 每组人数上限（≤6，房主端生效） |
 | General.MaxGroups | 6 | 组数上限（≤6，房主端生效） |
 | Physics.ChainLength | 5 | 锁链自然长度默认值（进房后以房主 UI 设置为准） |

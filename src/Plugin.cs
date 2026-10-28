@@ -11,7 +11,7 @@ namespace ChainTeams
     {
         public const string PluginGuid = "com.peakmod.chainteams";
         public const string PluginName = "ChainTeams 组队锁链";
-        public const string PluginVersion = "1.3.2";
+        public const string PluginVersion = "1.3.3";
 
         // GUID of the old single-chain mod; both mods pulling players at once feels broken.
         public const string LegacyChainedGuid = "com.github.Quaree.Chained";
@@ -42,7 +42,7 @@ namespace ChainTeams
             Log = Logger;
 
             CfgUIHotkey = Config.Bind("General", "UIHotkey", KeyCode.F9, "打开/关闭分组界面的按键");
-            CfgUISize = Config.Bind("General", "PanelSize", 52,
+            CfgUISize = Config.Bind("General", "PanelSize", 66,
                 new ConfigDescription("面板占屏幕的百分比（宽和高同比例）", new AcceptableValueRange<int>(30, 95)));
             CfgMaxPerTeam = Config.Bind("General", "MaxPerTeam", 6,
                 new ConfigDescription("每组最多人数（房主端生效，上限 6）", new AcceptableValueRange<int>(1, 6)));

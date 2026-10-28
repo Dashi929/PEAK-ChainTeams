@@ -406,7 +406,7 @@ namespace ChainTeams
             // 组头：色点 + 组名（房主可编辑）+ 人数 + 删除组
             GUILayout.BeginHorizontal();
             _headerStyle.normal.textColor = color;
-            GUILayout.Label("●", _headerStyle, GUILayout.Width(W(22)));
+            GUILayout.Label(slot.ToString(), _headerStyle, GUILayout.Width(W(30)));
 
             NameDraft[slot] = GUILayout.TextField(NameDraft[slot] ?? TeamState.Names[slot], GUILayout.Width(W(180)));
             if (GUILayout.Button("改名", GUILayout.Width(W(52)))) CommitNameDrafts();
@@ -502,7 +502,7 @@ namespace ChainTeams
 
             _headerStyle.normal.textColor = ChainUtil.TeamColors[0];
             GUILayout.BeginHorizontal();
-            GUILayout.Label("未分组（不参与锁链，点 + 加入对应组）", _headerStyle, GUILayout.Width(W(320)));
+            GUILayout.Label("未分组（点数字按钮加入对应组）", _headerStyle, GUILayout.Width(W(320)));
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{players.Count}人", _idStyle, GUILayout.Width(W(44)));
             GUILayout.EndHorizontal();
@@ -528,7 +528,7 @@ namespace ChainTeams
                     GUI.backgroundColor = ChainUtil.GroupColor(t);
                     var prevEnabled = GUI.enabled;
                     GUI.enabled = !full;
-                    if (GUILayout.Button($"+{TeamState.GroupName(t)}", GUILayout.Width(W(64)))) AddMember(t, player.Actor);
+                    if (GUILayout.Button(t.ToString(), GUILayout.Width(W(40)))) AddMember(t, player.Actor);
                     GUI.enabled = prevEnabled;
                     GUI.backgroundColor = prevBg;
                 }
