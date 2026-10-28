@@ -1,0 +1,6 @@
+bin/
+obj/
+package/
+*.zip
+_dumpenv.ps1
+dumpenv.ps1
