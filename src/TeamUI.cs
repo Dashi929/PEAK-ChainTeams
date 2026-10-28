@@ -30,6 +30,7 @@ namespace ChainTeams
 
         private static float W(float v) => v * _scale;
 
+
         // ---- 组名编辑草稿（槽位 -> 输入中内容；null = 未在编辑） ----
         private static readonly string[] NameDraft = new string[TeamState.MaxSlot + 1];
 
@@ -82,9 +83,8 @@ namespace ChainTeams
         private static GUIStyle _headerStyle;
         private static float _stylesForScale = -1f;
 
-        // 整套 GUISkin 副本（等比字号），让默认样式的按钮/标签/窗口标题一起放大
-        private static GUISkin _scaledSkin;
-        private static float _skinForScale = -1f;
+        // 汇总条样式（组号颜色文字 + PEAK 奶油底 Box），随样式重建
+        private static readonly GUIStyle[] _summaryStyles = new GUIStyle[TeamState.MaxSlot + 1];
 
         private static void EnsureStyles()
         {
@@ -92,51 +92,36 @@ namespace ChainTeams
             var s = _scale;
             var body = Mathf.RoundToInt(13 * s);
             _hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-            _nameStyle = new GUIStyle(GUI.skin.label) { fontSize = body, alignment = TextAnchor.MiddleLeft };
-            _idStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(11 * s), alignment = TextAnchor.MiddleCenter, normal = { textColor = new Color(1f, 1f, 1f, 0.45f) } };
+            _nameStyle = new GUIStyle(GUI.skin.label) { fontSize = body, alignment = TextAnchor.MiddleLeft, normal = { textColor = PeakStyle.Text } };
+            _idStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(11 * s), alignment = TextAnchor.MiddleCenter, normal = { textColor = new Color(0.45f, 0.40f, 0.33f) } };
             _statusStyle = new GUIStyle(GUI.skin.label) { fontSize = body };
-            _hintStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(11 * s), normal = { textColor = new Color(1f, 1f, 1f, 0.55f) } };
-            _warnStyle = new GUIStyle(GUI.skin.label) { fontSize = body, normal = { textColor = new Color(1f, 0.45f, 0.35f) } };
+            _hintStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(11 * s), normal = { textColor = new Color(0.50f, 0.44f, 0.36f) } };
+            _warnStyle = new GUIStyle(GUI.skin.label) { fontSize = body, normal = { textColor = new Color(0.68f, 0.20f, 0.16f) } };
             _centerStyle = new GUIStyle(GUI.skin.label) { fontSize = body, alignment = TextAnchor.MiddleCenter };
-            _headerStyle = new GUIStyle(GUI.skin.label) { fontSize = body, fontStyle = FontStyle.Bold };
+            _headerStyle = new GUIStyle(GUI.skin.label) { fontSize = body, fontStyle = FontStyle.Bold, normal = { textColor = PeakStyle.Text } };
+
+            for (var t = 1; t <= TeamState.MaxSlot; t++)
+            {
+                _summaryStyles[t] = new GUIStyle(GUI.skin.box)
+                {
+                    fontSize = body,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = GroupTextColor(t) },
+                };
+            }
             _stylesForScale = _scale;
-        }
-
-        private static Texture2D _windowBg;
-        private static Texture2D _boxBg;
-
-        private static Texture2D MakeSolidTex(Color c)
-        {
-            var t = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            t.SetPixel(0, 0, c);
-            t.Apply();
-            t.hideFlags = HideFlags.DontSave;
-            return t;
         }
 
         private static void EnsureScaledSkin()
         {
-            if (_scaledSkin != null && Mathf.Abs(_skinForScale - _scale) < 0.01f) return;
-            if (_scaledSkin != null) Object.Destroy(_scaledSkin);
-            _scaledSkin = Object.Instantiate(GUI.skin);
-            var f = Mathf.RoundToInt(13 * _scale);
-            _scaledSkin.label.fontSize = f;
-            _scaledSkin.box.fontSize = f;
-            _scaledSkin.button.fontSize = f;
-            _scaledSkin.toggle.fontSize = f;
-            _scaledSkin.textField.fontSize = f;
-            _scaledSkin.window.fontSize = f + Mathf.RoundToInt(2 * _scale);
+            PeakStyle.Build(_scale);
+        }
 
-            // 不透明深色背景：默认 IMGUI 窗口是半透明的，游戏画面会透出来和文字混在一起
-            if (_windowBg == null) _windowBg = MakeSolidTex(new Color(0.10f, 0.10f, 0.13f, 0.96f));
-            if (_boxBg == null) _boxBg = MakeSolidTex(new Color(0.17f, 0.17f, 0.21f, 0.96f));
-            _scaledSkin.window.normal.background = _windowBg;
-            _scaledSkin.window.onNormal.background = _windowBg;
-            _scaledSkin.window.normal.textColor = Color.white;
-            _scaledSkin.window.onNormal.textColor = Color.white;
-            _scaledSkin.box.normal.background = _boxBg;
-            _scaledSkin.box.onNormal.background = _boxBg;
-            _skinForScale = _scale;
+        /// <summary>组员文字用组色的加深版，保证奶油底上可读。</summary>
+        private static Color GroupTextColor(int slot)
+        {
+            var c = ChainUtil.GroupColor(slot);
+            return new Color(c.r * 0.72f + 0.06f, c.g * 0.72f + 0.06f, c.b * 0.72f + 0.06f, 1f);
         }
 
         public TeamUI(ChainManager owner)
@@ -203,7 +188,7 @@ namespace ChainTeams
             EnsureStyles();
             EnsureScaledSkin();
             var prevSkin = GUI.skin;
-            if (_scaledSkin != null) GUI.skin = _scaledSkin;
+            if (PeakStyle.Skin != null) GUI.skin = PeakStyle.Skin;
 
             var hotkeyName = Plugin.CfgUIHotkey.Value.ToString();
             _windowRect = GUILayout.Window(WindowId, _windowRect, DrawWindow,
@@ -277,13 +262,11 @@ namespace ChainTeams
         private void DrawTabButton(string label, int page)
         {
             var active = _page == page;
-            var prevBg = GUI.backgroundColor;
-            GUI.backgroundColor = active ? new Color(0.55f, 0.9f, 1f) : new Color(0.35f, 0.35f, 0.35f);
-            if (GUILayout.Button(label, GUILayout.Width(W(110)), GUILayout.Height(W(30))))
+            var style = PeakStyle.Button(active ? PeakStyle.Accent : PeakStyle.CreamDark);
+            if (GUILayout.Button(label, style, GUILayout.Width(W(110)), GUILayout.Height(W(34))))
             {
                 _page = page;
             }
-            GUI.backgroundColor = prevBg;
         }
 
         // ---------------- 分组管理页 ----------------
@@ -324,14 +307,14 @@ namespace ChainTeams
                 GUILayout.Height(Mathf.Max(W(220), _windowRect.height - W(120))));
 
             GUILayout.BeginVertical(GUI.skin.box);
-            _headerStyle.normal.textColor = Color.white;
+            _headerStyle.normal.textColor = PeakStyle.Text;
             GUILayout.Label("锁链参数", _headerStyle);
             GUILayout.Label("拖动即时生效，全房间同步（拖动中每 0.5 秒同步一次）。", _hintStyle);
             GUILayout.Space(W(4));
             ParamSlider("链长(米)", ref _lenBuf, 1f, 20f, v => TeamState.ChainLength = v, "{0:0.0}");
             ParamSlider("拉扯强度", ref _strBuf, 1f, 200f, v => TeamState.PullStrength = Mathf.Round(v), "{0:0}");
             ParamSlider("最大拉力", ref _maxBuf, 10f, 2000f, v => TeamState.MaxPullForce = Mathf.Round(v), "{0:0}");
-            if (GUILayout.Button("恢复默认参数", GUILayout.Width(W(160))))
+            if (GUILayout.Button("恢复默认参数", PeakStyle.Button(PeakStyle.Accent), GUILayout.Width(W(170))))
             {
                 _lenBuf = Plugin.CfgChainLength.Value;
                 _strBuf = Plugin.CfgPullStrength.Value;
@@ -345,7 +328,7 @@ namespace ChainTeams
 
             GUILayout.Space(W(6));
             GUILayout.BeginVertical(GUI.skin.box);
-            _headerStyle.normal.textColor = Color.white;
+            _headerStyle.normal.textColor = PeakStyle.Text;
             GUILayout.Label("当前规则", _headerStyle);
             GUILayout.Label($"最多 {TeamState.MaxGroups} 组、每组 {Plugin.MaxPerTeam} 人（可在 BepInEx 配置里调小）。");
             GUILayout.Label($"成员看到的参数与此一致：链长 {TeamState.ChainLength:0.0} 米 / 强度 {TeamState.PullStrength:0} / 最大拉力 {TeamState.MaxPullForce:0}。");
@@ -359,13 +342,11 @@ namespace ChainTeams
             GUILayout.BeginHorizontal();
 
             GUILayout.Label("锁链系统：", GUILayout.Width(W(64)));
-            var prev = GUI.backgroundColor;
-            GUI.backgroundColor = TeamState.Enabled ? new Color(0.55f, 1f, 0.55f) : new Color(1f, 0.5f, 0.5f);
-            if (GUILayout.Button(TeamState.Enabled ? "● 已启用（点击停用）" : "○ 已停用（点击启用）", GUILayout.Width(W(180))))
+            if (GUILayout.Button(TeamState.Enabled ? "● 已启用（点击停用）" : "○ 已停用（点击启用）",
+                PeakStyle.Button(TeamState.Enabled ? PeakStyle.Good : PeakStyle.Bad), GUILayout.Width(W(190))))
             {
                 TeamState.Publish(!TeamState.Enabled, TeamState.GroupCount, TeamState.CopyTeams(), TeamState.CopyNames());
             }
-            GUI.backgroundColor = prev;
 
             GUILayout.FlexibleSpace();
             GUILayout.Space(W(8));
@@ -382,11 +363,7 @@ namespace ChainTeams
             }
             for (var t = 1; t <= TeamState.GroupCount; t++)
             {
-                var color = ChainUtil.GroupColor(t);
-                var prev = GUI.backgroundColor;
-                GUI.backgroundColor = new Color(color.r, color.g, color.b, 1f);
-                GUILayout.Box($"{TeamState.GroupName(t)}  {TeamState.CountInTeam(t)}/{Plugin.MaxPerTeam}", GUILayout.Height(W(26)));
-                GUI.backgroundColor = prev;
+                GUILayout.Box($"  {t}·{TeamState.GroupName(t)}  {TeamState.CountInTeam(t)}/{Plugin.MaxPerTeam}  ", _summaryStyles[t], GUILayout.Height(W(30)));
                 GUILayout.Space(W(6));
             }
             GUILayout.EndHorizontal();
@@ -405,15 +382,15 @@ namespace ChainTeams
 
             // 组头：色点 + 组名（房主可编辑）+ 人数 + 删除组
             GUILayout.BeginHorizontal();
-            _headerStyle.normal.textColor = color;
+            _headerStyle.normal.textColor = GroupTextColor(slot);
             GUILayout.Label(slot.ToString(), _headerStyle, GUILayout.Width(W(30)));
 
             NameDraft[slot] = GUILayout.TextField(NameDraft[slot] ?? TeamState.Names[slot], GUILayout.Width(W(180)));
-            if (GUILayout.Button("改名", GUILayout.Width(W(52)))) CommitNameDrafts();
+            if (GUILayout.Button("改名", PeakStyle.Button(PeakStyle.CreamDark), GUILayout.Width(W(56)))) CommitNameDrafts();
 
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{members.Count}/{Plugin.MaxPerTeam}", _idStyle, GUILayout.Width(W(44)));
-            if (GUILayout.Button("删除组", GUILayout.Width(W(64)))) DeleteGroup(slot);
+            if (GUILayout.Button("删除组", PeakStyle.Button(PeakStyle.Bad), GUILayout.Width(W(72)))) DeleteGroup(slot);
             GUILayout.EndHorizontal();
 
             foreach (var actor in members)
@@ -449,22 +426,19 @@ namespace ChainTeams
 
             GUILayout.FlexibleSpace();
 
-            var prevBg = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(0.75f, 0.85f, 1f);
             var prevEnabled = GUI.enabled;
+            var tanButton = PeakStyle.Button(PeakStyle.CreamDark);
 
             GUI.enabled = order > 0;
-            if (GUILayout.Button("上移", GUILayout.Width(W(56)))) MoveMember(slot, actor, -1);
+            if (GUILayout.Button("上移", tanButton, GUILayout.Width(W(60)))) MoveMember(slot, actor, -1);
 
             GUI.enabled = order >= 0 && order < memberCount - 1;
-            if (GUILayout.Button("下移", GUILayout.Width(W(56)))) MoveMember(slot, actor, +1);
+            if (GUILayout.Button("下移", tanButton, GUILayout.Width(W(60)))) MoveMember(slot, actor, +1);
 
             GUI.enabled = true;
-            GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);
-            if (GUILayout.Button("移除", GUILayout.Width(W(56))) && TeamState.Enabled) RemoveMember(slot, actor);
+            if (GUILayout.Button("移除", PeakStyle.Button(PeakStyle.Bad), GUILayout.Width(W(60)))) RemoveMember(slot, actor);
 
             GUI.enabled = prevEnabled;
-            GUI.backgroundColor = prevBg;
 
             GUILayout.EndHorizontal();
         }
@@ -476,9 +450,8 @@ namespace ChainTeams
             var canAdd = TeamState.GroupCount < TeamState.MaxGroups;
             var prevEnabled = GUI.enabled;
             GUI.enabled = canAdd;
-            var prevBg = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(0.6f, 1f, 0.7f);
-            if (GUILayout.Button($"＋添加分组（{TeamState.GroupCount}/{TeamState.MaxGroups}）", GUILayout.Width(W(240)), GUILayout.Height(W(30))))
+            if (GUILayout.Button($"＋添加分组（{TeamState.GroupCount}/{TeamState.MaxGroups}）",
+                PeakStyle.Button(PeakStyle.Good), GUILayout.Width(W(260)), GUILayout.Height(W(34))))
             {
                 var teams = TeamState.CopyTeams();
                 var names = TeamState.CopyNames();
@@ -486,7 +459,6 @@ namespace ChainTeams
                 names[count] = "";
                 TeamState.Publish(TeamState.Enabled, count, teams, names);
             }
-            GUI.backgroundColor = prevBg;
             GUI.enabled = prevEnabled;
             GUILayout.EndHorizontal();
         }
@@ -500,7 +472,7 @@ namespace ChainTeams
 
             GUILayout.BeginVertical(GUI.skin.box);
 
-            _headerStyle.normal.textColor = ChainUtil.TeamColors[0];
+            _headerStyle.normal.textColor = PeakStyle.Text;
             GUILayout.BeginHorizontal();
             GUILayout.Label("未分组（点数字按钮加入对应组）", _headerStyle, GUILayout.Width(W(320)));
             GUILayout.FlexibleSpace();
@@ -511,7 +483,7 @@ namespace ChainTeams
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Space(W(30));
-                _nameStyle.normal.textColor = Color.white;
+                _nameStyle.normal.textColor = PeakStyle.Text;
                 var suffix = player.IsLocal ? "（你）" : (player.IsHost ? "（房主）" : "");
                 GUILayout.Label($"{player.Name}{suffix}", _nameStyle, GUILayout.Width(W(230)));
                 GUILayout.Label($"#{player.Actor}", _idStyle, GUILayout.Width(W(46)));
@@ -524,13 +496,10 @@ namespace ChainTeams
                 for (var t = 1; t <= TeamState.GroupCount; t++)
                 {
                     var full = TeamState.CountInTeam(t) >= Plugin.MaxPerTeam;
-                    var prevBg = GUI.backgroundColor;
-                    GUI.backgroundColor = ChainUtil.GroupColor(t);
                     var prevEnabled = GUI.enabled;
                     GUI.enabled = !full;
-                    if (GUILayout.Button(t.ToString(), GUILayout.Width(W(40)))) AddMember(t, player.Actor);
+                    if (GUILayout.Button(t.ToString(), PeakStyle.Button(ChainUtil.GroupColor(t)), GUILayout.Width(W(42)), GUILayout.Height(W(32)))) AddMember(t, player.Actor);
                     GUI.enabled = prevEnabled;
-                    GUI.backgroundColor = prevBg;
                 }
 
                 GUILayout.EndHorizontal();
@@ -560,7 +529,7 @@ namespace ChainTeams
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(label, GUILayout.Width(W(110)));
-            var changed = GUILayout.HorizontalSlider(buf, min, max, GUILayout.Width(W(360)));
+            var changed = GUILayout.HorizontalSlider(buf, min, max, PeakStyle.SliderTrack, PeakStyle.SliderThumb, GUILayout.Width(W(360)));
             if (Mathf.Abs(changed - buf) > 0.001f)
             {
                 buf = changed;
@@ -575,11 +544,11 @@ namespace ChainTeams
         {
             GUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("智能分组（按进场顺序均分）", GUILayout.Height(W(32))))
+            if (GUILayout.Button("智能分组（按进场顺序均分）", PeakStyle.Button(PeakStyle.Accent), GUILayout.Height(W(36))))
             {
                 SmartGroup();
             }
-            if (GUILayout.Button("清空分组", GUILayout.Height(W(32))))
+            if (GUILayout.Button("清空分组", PeakStyle.Button(PeakStyle.CreamDark), GUILayout.Height(W(36))))
             {
                 TeamState.Publish(TeamState.Enabled, 0, TeamState.CopyTeams(), TeamState.CopyNames());
             }
